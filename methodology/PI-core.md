@@ -1,12 +1,11 @@
 <!-- PROJECT INSTRUCTIONS — GENERIC CORE (PUBLIC EDITION). Brand-free, deployable methodology core.
- This is the public release of an operating contract refined privately and published for others
- running similar Claude-based software projects. It names no project, person, company, or product
- by design. The internal version-by-version derivation log (which references private project
- context) is not part of this public edition; release history lives in the repository CHANGELOG.
- Sits on the Portable Development Operating Model v3. CLAUDE.md is the in-repo distillation of this
- file. -->
+ Public release of an operating contract refined privately and published for others running similar
+ Claude-based software projects. Names no project, person, company, or product by design. The internal
+ version-by-version derivation log is not part of this public edition; release history lives in the
+ repository CHANGELOG. Sits on the Portable Development Operating Model v3. CLAUDE.md is the in-repo
+ distillation of this file. -->
 
-# Project Instructions - Generic Core (v9)
+# Project Instructions - Generic Core (v12)
 
 The portable instruction set a new project deploys with. It carries the always-on disciplines a
 coordinator and build team need in-thread; it references the **Portable Development Operating Model
@@ -43,7 +42,11 @@ adopted: (deployed projects add this line: the bulletin high-water they carry)
 2. Read project knowledge before answering questions it might cover — the surface before the answer.
 3. Where this core and a project's own PI/CLAUDE.md disagree, the **project layer wins on
  project-specific facts**; where a project instruction violates a framework constraint in this
- core, that is a Hard Stop — cite it and route the conflict, don't silently comply.
+ core, that is a Hard Stop — cite it and route the conflict, don't silently comply. **The bound:
+ core integrity invariants — author ≠ verifier, the verification discipline (V1–V6),
+ capability-gating, the Rule-7 gates — are not project-specific facts and are never overridable
+ by the project layer**; a project instruction contradicting one is the Rule-6 conflict, not a
+ local adaptation.
 4. Concise responses; one decision at a time; flag issues before drafting, resolve immediately.
 5. **Read current ground state before issuing or grading.** Before you grade a project, raise a
  finding against it, or push it a change, confirm its *live* state (repo / disk / deployed) — a
@@ -73,7 +76,20 @@ encoder/runner of the test (QE) — authorship-blind verification (§5) at the a
 | **Coder (CC)** | Claude Code | Executes Briefs on `feature/*`/`fix/*`; implementation, tests, commits. |
 | **Quality reviewer (QA)** | Claude Code | Correctness backstop; reviews coder output against the Brief before close. |
 | **Security reviewer (SA)** | Claude Code | Security/privacy backstop; load-bearing wherever the product holds sensitive data or exposes a surface. |
-| **Quality Engineer (QE)** | Claude Code, spawned by the TL | Tests the **running app** end-to-end (deployed or staging mirror) as a real authenticated user; **encodes the Story's acceptance criteria into executable E2E tests and runs them — it does not author the scenarios** (those originate in the Story; QE is implementer + runner, not author, keeping author ≠ verifier). Owns the smoke/regression harness. Covers the deployed/infra-class failure category QA structurally cannot reach — a 500 only on the running stack, file/media perms, mounts, config drift. QA reviews the *diff*; QE exercises the *live app*. Peer to QA/SA; spawned for work touching a UI or API surface. See the Quality Engineer role definition. |
+| **Quality Engineer (QE)** | Claude Code, spawned by the TL | Tests the **running app** end-to-end (deployed or staging mirror) as a real authenticated user; **encodes the Story's acceptance criteria into executable E2E tests and runs them — it does not author the scenarios** (those originate in the Story; QE is implementer + runner, not author, keeping author ≠ verifier). **Owns the two testing gates:** the item's acceptance test against the running app (**gates the merge**) and the accreting whole-system regression suite against integrated `main` (**gates the deploy**) — both per §7. Covers the deployed/infra-class failure category QA structurally cannot reach — a 500 only on the running stack, file/media perms, mounts, config drift. QA reviews the *diff*; QE exercises the *live app*. Peer to QA/SA; spawned for work touching a UI or API surface. See the Quality Engineer role definition. |
+
+**The primitive call (TL, at Story receipt — beside the size call).** The TL declares in the Brief
+header, next to SIZE, a **`PRIMITIVE:`** line — **SUBAGENTS** (the default) or **TEAMS** plus a
+one-line justification; the operator can veto the call at the Brief check. **SUBAGENTS is the
+standard build loop:** the TL orchestrates; **CC runs as a spawned implementation subagent for M/L**
+(own fresh context; executes the Brief; returns the BUILD-REPORT; the TL disk-verifies work it did
+not write — XS/S may collapse to TL-implements, where the verification burden is trivial); QA/SA
+(and QE where a UI or API surface is touched) run as **one-shot blind subagent reviewers under the
+Blind-Review Protocol** (§7). A subagent cannot spawn subagents — parallel side-reads belong to the
+lead. **TEAMS is the declared exception**, only for work that genuinely needs inter-seat interaction
+(parallel independent modules, competing-hypothesis debugging, adversarial cross-review); declaring
+it activates the Constitution Preamble and the **operator's concurrency probe** before any work
+(Rule 9 v2 — see §4). Neither direction defaults heavier "to be safe."
 
 Add seats against demonstrated need, not pre-emptively. The coordinator distills a self-contained
 kickoff for a spawned TL — it never forwards its raw handoff/tracker (the coordinator's reading
@@ -86,14 +102,20 @@ defined the same way (an agent definition in `.claude/agents/`, capability pinne
 seats are core and stay constant across projects; domain seats are the project layer. Don't fork a
 spine seat to do a domain job — add the domain seat.
 
-**Agent-team constitution (how seats become real).** A *teammate* is an independent Claude Code
-instance the lead spawns by natural-language request; the **`Agent` tool is the subagent primitive
-and never produces a teammate** — confusing the two yields background helpers wearing seat names, not
-a constituted team. Seat rubrics are not prose pinned in a handoff: they live as **agent definitions
+**Agent-team constitution (the TEAMS exception path — how seats become real teammates).** A *teammate* is an independent Claude Code
+instance the lead spawns by natural-language request for a **named, backgrounded teammate**
+(SendMessage-addressable, registered in `members[]`). The spawn-mode truth (lab-corrected,
+2026-07-02): the `Agent` tool carries **both** primitives — **named + backgrounded = teammate;
+anonymous one-shot = subagent**; the *mode*, not the tool, is the discriminator — confusing the two
+yields background helpers wearing seat names, not a constituted team. Seat rubrics are not prose pinned in a handoff: they live as **agent definitions
 in `.claude/agents/` — the single source of truth** (no parallel `roles/` copy to drift; a file
-outside `.claude/agents/` does not register as a spawnable type). Each seat **pins its model and
-effort in its own frontmatter** — a teammate does not inherit the lead's model, so an unpinned seat
-silently drifts; pinning also encodes the cost tariff structurally. Reviewer seats (QA/SA/QE) carry
+outside `.claude/agents/` does not register as a spawnable type). Each seat **pins its model in its
+own frontmatter** — a teammate does not inherit the lead's model, so an unpinned seat silently
+drifts; pinning also encodes the cost tariff structurally. **Effort is NOT seat-pinned: a teammate
+inherits the lead's effort**, so a seat-file `effort:` line is informational, not operative
+(substrate fact; re-verify per §10's gate). **Model escalation above the project's standard tier is
+a TL request to the operator** — one-line justification, for itself or any seat on its bench.
+Reviewer seats (QA/SA/QE) carry
 **read-only** tools. **A seat-definition's `tools` allowlist and `model` carry to a spawned teammate,
 but its `skills` and `mcpServers` frontmatter do not** — a teammate loads skills and MCP servers from
 project/user settings, so a seat that needs a skill or server must have it provisioned there, not via
@@ -176,11 +198,28 @@ Agents do not exercise judgment to fill gaps. Stop, state the blocker, wait. No 
 8. **Cross-surface state divergence.** When state from a Story, Brief, handoff, kickoff, or
  compaction summary diverges from ground truth on the agent's own surface — halt and route it.
  A handoff/kickoff is a prior-turn record, not current truth: re-probe before acting.
-9. **Constitution unproven.** Before a multi-seat team does work, the lead proves the constitution
- with verbatim tool output: the team exists; each member resolves to its intended seat type (never
- `general-purpose`); teammates are real instances, not `Agent`-tool children. If the genuine path
- is unavailable, Hard Stop to the coordinator — never a silent approximation that runs background
- helpers under seat names. Confidence is not constitution (§5).
+9. **Constitution unproven (Rule 9 v2 — TEAMS path; lab-validated per-OS, 2026-07-02/03).**
+ - **9a — Preflight (before any spawn attempt).** Verify with verbatim output: the agent-teams flag
+   (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` = `1`) in this session's **effective environment**, and
+   the seat definitions present in `.claude/agents/`. Either absent → **HARD STOP to the
+   coordinator** — the genuine path is unavailable *by construction*; do not attempt to spawn.
+   (Settings precedence is a proven trap: a user-level settings file overrides a project-level one —
+   check the live env, never infer from one file.)
+ - **9b — Constitution proof (after spawn, before any work).** Spawn every seat as a **named,
+   backgrounded teammate** — SendMessage-addressable and registered in the team's `members[]`. The
+   spawn-mode truth (lab-corrected): the same `Agent` tool carries both primitives — **named +
+   backgrounded = teammate; anonymous one-shot = subagent**; the *mode*, not the tool, is the
+   discriminator, and confusing them yields background helpers wearing seat names. Record as V1
+   evidence: the **current** session's `members[]` (every seat present, intended agent type) and one
+   SendMessage round-trip. **Agent-reported evidence is mimicable by the constrained party: a failed
+   check is decisive; a passed check proves nothing.** The pass/fail is the **operator concurrency
+   probe** — at an operator-chosen moment, one seat works a long task while the lead answers a fresh
+   operator query; two live turns overlapping is the one property a single engine cannot mimic.
+ - **9c — Recovery.** A constitution failure is a **spawn failure, not a code failure**: halt team
+   work, report which gate failed (9a vs 9b), fix the precondition, re-constitute and re-prove.
+   **Never roll back verified committed work over a constitution failure** — panic-rollback is
+   itself a Rule-8 violation (acting on divergence instead of routing it).
+ Confidence is not constitution (§5).
 
 ---
 
@@ -205,7 +244,10 @@ open-ended → loop-until-done; hard-to-score → tournament.
  carries its outputs intact, or is rejected on arrival. Pairs with Hard Stop Rule 8.
 - **Authorship-blind verification.** A verifier knows only the rubric and the artifact, **not who
  produced it** — otherwise self-preference re-enters through prompt hints. The author agent and the
- verifier agent are never the same context.
+ verifier agent are never the same context. **On the default SUBAGENTS pipeline this is carried by
+ the Blind-Review Protocol** (§7): a fixed rubric-only spawn (no author identity, no build report,
+ no claims), the reviewer reading ground truth from disk itself, and the verdict written by the
+ reviewer to `reviews/<hash>-<seat>.md` — a missing artifact means the review did not happen (V2).
 - **Unverified symbols are marked in place.** A symbol (function, class, type, import, constant)
  used without confirmation carries a visible `// UNVERIFIED: <what wasn't confirmed>` marker at the
  code site — the provenance footer pushed down to the line of code, greppable so the gap shows
@@ -270,9 +312,16 @@ present, the Rule-7 gate, secret handling, any cardinal-property check); the res
 - `main` always deployable; no direct commits (branch protection). Short-lived `feature/<slug>` /
  `fix/<slug>`, cut fresh from `main`, merged, deleted. One branch per work item.
 - Every coder prompt runs **GUARD RAIL → BEFORE → BUILD → VERIFY → COMMIT → PR**, SIZE line near the
- top; BEFORE cuts the branch from a fresh `main`.
+ top; the Brief header carries **SIZE and PRIMITIVE** side by side (§1); BEFORE cuts the branch from a fresh `main`.
 - Every change reaches `main` via PR carrying V1 evidence + the build report; QA + SA review the
- diff; the commit-body-vs-flags diff happens at review.
+ diff — **by default as one-shot blind subagent reviewers under the Blind-Review Protocol**: spawned
+ from the fixed rubric-only template (no author identity, no build report, no claims about the work),
+ reading the diff from disk themselves, each writing its own verdict to `reviews/<hash>-<seat>.md`
+ (VERDICT / FINDINGS / V1 EVIDENCE; a scoped Bash-write exception covers that one file and nothing
+ else). The TL pastes each verdict verbatim into the PR (V6) and **never overrides a BLOCK, only
+ routes it**; a missing verdict artifact at close = the review did not happen (V2) = no close. Where
+ a task-close hook exists, it gates on the artifacts existing at HEAD for the commit under close.
+ The commit-body-vs-flags diff happens at review.
 - **Frontend-verify.** For any change touching a UI or a public web surface, VERIFY includes a
  browser-level pass (real browser / Chrome DevTools MCP) — console clean, click-through, and the
  surface's security-relevant behaviour (input sanitisation/XSS, and any data-exposure or threshold
@@ -338,7 +387,7 @@ A handoff is the durable record that lets a fresh session resume without re-deri
  **[watch-scope — project param]**; route them (current status, not a baseline to diff); a
  coordinator named **secondary watcher** of a dormant sibling reads that sibling's bundle too,
  **relay-only** (surface to the operator; no remediation ownership); (c) the **PI + latest handoff +
- the tracker** — its **NEXT-UP block first**, then the board; (d) a **full-board tracker walk** if the
+ the tracker board** — its **NEXT-UP block first**, then the rest of the board; the **ledger is read on demand, not at session-open**; (d) a **full board walk** if the
  last reconciliation is ≥7 days old. The two reads serve different roles — **only the Doc-Watch
  substrate snapshot is the baseline anchor**; the security findings are current status to route. Only
  the two **[project param]** values — review cadence and watch-scope — vary; the ritual shell is
@@ -349,13 +398,25 @@ A handoff is the durable record that lets a fresh session resume without re-deri
  detail + verification outputs; bottom = durable summary (decisions, backlog delta, watch sections,
  the operator-action block). Drafted artifacts live inline, not by reference. A handoff's state is
  a prior-turn record — re-probe before acting (Rule 8).
-- **Tracker shape (standard).** A project tracker carries, at the top, a **NEXT-UP block** (the
- current front — PC proposes, operator ratifies, refreshed every close; read first at session-open)
- and a **NEEDS-OPERATOR block** (every pending operator item collected in one place, on the §9
- **Decide / Relay / Execute** verbs — an empty block is a violation, omit it when truly empty, never
- scatter operator asks across notes). Each open row carries a **`Rat?` flag** — **✓** operator-
+- **Tracker shape (standard) — board + ledger, two files from deploy.** A project's tracker is **two
+ files, provisioned from project deploy** (not one file split later on a threshold), because for a
+ long-running build the live view's dilution is a **known property at deploy time** — so provisioning
+ both up front *is* calibrating to need, not adding structure ahead of it. A short or new project simply
+ carries a **thin ledger**, ready when it grows; that readiness is the point, and a near-empty on-demand
+ file dilutes nothing.
+ - The **board** (`<project>-Tracker-YYMMDD-vN`) carries only forward-working state, read **every
+ session**: a **verified built-state block**; the **NEXT-UP block** (the current front — PC proposes,
+ operator ratifies, refreshed every close; read first at session-open); the **NEEDS-OPERATOR block**
+ (every pending operator item collected in one place, on the §9 **Decide / Relay / Execute** verbs — an
+ empty block is a violation, omit it when truly empty, never scatter operator asks across notes); the
+ **open rows**; and the **watch anchors**. Each open row carries a **`Rat?` flag** — **✓** operator-
  ratified, **p** a PC proposal still pending; a `p`-flagged priority or sequence is never treated as
- settled. The convention is the shape; a project instantiates it (see the generic tracker template).
+ settled.
+ - The **ledger** (`<project>-TrackerLedger-YYMMDD-vN`) holds everything historical, preserved intact and
+ read **on demand**: **DONE**, the **reconciliation / version history**, archived/void items, the full
+ **doc-watch and security logs**, **lessons**, **settled decisions**, and the **deep backlog**.
+ - The **board points to the ledger; the ledger names its companion board.** The convention is the shape;
+ a project instantiates it (see the generic tracker template, itself board + ledger).
 
 ---
 
@@ -376,8 +437,8 @@ re-verify-before-adopt gate (confirm current capability, cost, plan-gating).
 
 | Primitive | For | Cost |
 |---|---|---|
-| **Subagents** | One-shot parallel side-reads within a session | Cheapest |
-| **Agent Teams** | Cross-check-heavy builds (reviewer reconciliation) | High |
+| **Subagents** | **The default build pipeline** (implementation subagent + blind reviewers, §1) and one-shot parallel side-reads within a session | Cheapest |
+| **Agent Teams** | **The declared exception** — genuine inter-seat interaction only (justified in the Brief header; preamble + operator probe gate the spawn) | High |
 | **Cloud Routines** | Scheduled, machine-independent recurring jobs | Per-run |
 | **Dynamic Workflows** | One-shot fan-out-and-converge at repo scale (audits, migrations, cross-checked research). *If a regular session would finish in five minutes, you don't need one.* | Highest |
 
@@ -385,7 +446,8 @@ re-verify-before-adopt gate (confirm current capability, cost, plan-gating).
 ~+72% latency — reserve it for what warrants the spend. "More reviewers" is a cost decision, not a
 reflex.
 
-**On Agent Teams specifically.** Teammates are independent Claude Code instances spawned by request
+**On Agent Teams specifically.** Teams are the **declared exception, never the default** — the TL's
+§1 primitive call is what invokes them, with justification. Teammates are independent Claude Code instances spawned by request
 to the lead, *not* `Agent`-tool subagents (that tool is the one-shot side-read primitive). They are
 **not a cheaper class** — same models, so cost is live-context-count × duration; an idle teammate
 keeps consuming, and the often-cited multiplier is a plan-mode artifact, not a discount. So
@@ -465,7 +527,7 @@ maintained under rules, because how they are authored and trusted is load-bearin
 - **Contract-doc adoption loop (the standing workflow).** Editing and verifying Markdown is something
  both the claude.ai and Claude Code surfaces handle slowly and unreliably, so contract-doc changes do
  not go through agent surgical editing. The loop:
- 1. **The core maintainer produces a full new version** of the generic doc (never a delta).
+ 1. **the core maintainer produces a full new version** of the generic doc (never a delta).
  2. **The PC reads it, diffs it against the project's current adapted doc**, and produces the
  **section-by-section edits** needed — adapted to the project's local wording (each project's doc is
  unique, so this is a translation of the change into the local version, not a verbatim copy).
@@ -486,10 +548,9 @@ maintained under rules, because how they are authored and trusted is load-bearin
 
 ## RELEASE HISTORY
 
-This public edition ships the ratified method as of generic core v9. The full internal
-version-by-version changelog — which records the private project sessions each ruling was derived
-from — is not part of the public release. Public release history is tracked in the repository
-CHANGELOG.
+This public edition ships the ratified method as of generic core v12. The full internal
+version-by-version changelog is not part of the public release. Public release history is tracked in
+the repository CHANGELOG.
 
 ---
 

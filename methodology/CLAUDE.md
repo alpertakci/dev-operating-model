@@ -1,9 +1,9 @@
 <!-- CLAUDE.md — GENERIC CORE (PUBLIC EDITION). Brand-free, deployable. Loaded IN FULL by every
  Claude Code session in a repo built on this core. KEEP IT UNDER ~200 LINES as an adherence target
- (readability/discipline) — the 200-line / 25 KB hard cap is MEMORY.md-only; this file is not
- subject to it and loads in full. Source of record is the generic PI + the Portable Development
- Operating Model v3; this file distills only the always-on rules a coding session must have in
- context. A deploying project adds its own project layer (domain, stack, invariants) on top. -->
+ (readability/discipline) — the 200-line / 25 KB hard cap is MEMORY.md-only; this file is not subject
+ to it and loads in full. Source of record is the generic PI + the Portable Development Operating
+ Model v3; this file distills only the always-on rules a coding session must have in context. A
+ deploying project adds its own project layer (domain, stack, invariants) on top. -->
 
 # CLAUDE.md - Generic Core
 
@@ -33,10 +33,17 @@ invariants and stack sit on top of this; this is the part common to every projec
  **file token is allowed only for reviewed, reversible, gated surfaces** (e.g. contract-doc edits
  under review + operator merge), forgeability accepted because the blast radius is bounded. Out-of-tree
  file placement is *not* a substitute.
-- **Rule 9 — constitution unproven.** Before a multi-seat team works, prove the constitution with
- tool output: the team exists; members resolve to their seat types (never `general-purpose`);
- teammates are real instances, not `Agent`-tool children. Genuine path unavailable → HARD STOP to
- the coordinator, never a silent approximation. Confidence is not constitution.
+- **Rule 9 — constitution unproven (TEAMS path; v2, lab-validated per-OS 2026-07-02/03).**
+ **9a** Preflight before any spawn attempt: agent-teams flag `1` in the **effective** env
+ (user-level settings override project-level — check the live env) + seat defs present; either
+ absent → HARD STOP, never a silent approximation. **9b** Spawn every seat as a **named,
+ backgrounded teammate** (SendMessage-addressable, registered in `members[]`) — the `Agent` tool
+ carries both primitives: **named + backgrounded = teammate; anonymous one-shot = subagent** (the
+ mode, not the tool, is the discriminator). members[] + one round-trip = V1 record — a failed check
+ is decisive; a passed check proves nothing. The pass/fail is the **operator concurrency probe**
+ (two live turns overlapping at an operator-chosen moment). **9c** A constitution failure is a
+ spawn failure, not a code failure — halt, report, re-constitute; **never roll back verified work**.
+ Confidence is not constitution.
 - **Rule 8 — cross-surface divergence.** When state from a Story, Brief, handoff, kickoff, or
  compaction summary diverges from ground truth on your own surface — halt and route it. A
  handoff/kickoff is a prior-turn record, not current truth: re-probe before acting.
@@ -57,7 +64,10 @@ invariants and stack sit on top of this; this is the part common to every projec
  its *live* state (repo/disk/deployed) — a registry value, a status line, or a prior handoff is a
  claim to re-confirm, not ground truth. (The grading-time companion to Rule 8.)
 - **Authorship-blind verification.** A verifier knows only the rubric and the artifact, not who
- produced it. The author agent and the verifier agent are never the same context.
+ produced it. The author agent and the verifier agent are never the same context. On the default
+ SUBAGENTS pipeline this is the **Blind-Review Protocol**: fixed rubric-only spawn, reviewer reads
+ the diff from disk, verdict written by the reviewer to `reviews/<hash>-<seat>.md` — a missing
+ artifact = the review did not happen (V2) = no close.
 - **Verify a symbol before use** — read the defining file, `grep`, or check the dependency manifest
  before importing/calling it. If you must use it unconfirmed, prefix `// UNVERIFIED: <what wasn't
  confirmed>` at the site (greppable) and never claim "done" on top of it.
@@ -97,9 +107,13 @@ invariants and stack sit on top of this; this is the part common to every projec
 - `main` always deployable; no direct commits (branch protection). Short-lived `feature/<slug>` /
  `fix/<slug>`, cut fresh from `main`, merged, deleted. One branch per work item.
 - Every CC prompt runs **GUARD RAIL → BEFORE → BUILD → VERIFY → COMMIT → PR**, SIZE line near the
- top; BEFORE cuts the branch from a fresh `main`.
+ top; the Brief header carries **SIZE and PRIMITIVE** side by side; BEFORE cuts the branch from a fresh `main`.
 - Every change reaches `main` via PR carrying V1 evidence + the BUILD-report. **QA + SA review the
- diff.** SA owns the security/privacy review on every item.
+ diff — by default as one-shot blind subagent reviewers (Blind-Review Protocol):** fixed rubric-only
+ spawn (no author identity, no build report, no claims), reviewer reads the diff from disk, verdict
+ written to `reviews/<hash>-<seat>.md` (scoped Bash-write for that one file only). The TL pastes each
+ verdict verbatim into the PR and never overrides a BLOCK — only routes it; missing artifact at close
+ = no close. SA owns the security/privacy review on every item.
 - **Smoke-test gate** (M/L UI/API change): the PR carries the QE's end-to-end smoke-test run output
  (V1). No smoke run → not "done" → not merged. Harness is repo code under doc-code colocation, in CI.
  Where team hooks exist, a `TaskCompleted`-class hook that exits non-zero blocks marking the task
@@ -131,9 +145,9 @@ invariants and stack sit on top of this; this is the part common to every projec
  (security invariants always load — **never path-scope them**), don't compress cardinal prose. A
  ratified ruling lands in the **PI first**; this file mirrors it — never author policy here first.
  Verify contract-doc placement by reading the full text, not by base64-decode, surgical re-fetch, or
- byte-diff (all banned for these files — both surfaces edit/verify Markdown poorly, so the core
- maintainer ships full new versions, the operator applies edits, and the PC verifies by reading;
- reading *is* the verification).
+ byte-diff (all banned for these files — both surfaces edit/verify Markdown poorly, so the core maintainer ships
+ full new versions, the operator applies edits, and the PC verifies by reading; reading *is* the
+ verification).
 - **Log negative results:** keep a short-list of what-didn't-work so dead ends aren't re-run.
 - **Secrets** are generated cryptographically, written to runtime config, recorded once in a secrets
  store; generation is a Rule 7 surface. **No secrets or PII in logs or error messages.**
@@ -153,24 +167,39 @@ domain job.
 - **QE** — Quality Engineer; tests the **running app** end-to-end (deployed/staging) as a real user;
  **encodes the Story's acceptance criteria into executable E2E tests and runs them — does not author
  the scenarios** (those come from the Story; QE is implementer + runner, keeping author ≠ verifier).
- Owns the smoke/regression harness. Covers deployed/infra-class failures QA can't reach (a 500 only on
+ **Owns the two testing gates:** the item's acceptance test against the running app (gates the
+ merge) and the accreting whole-system regression suite against integrated `main` (gates the
+ deploy). Covers deployed/infra-class failures QA can't reach (a 500 only on
  the live stack, perms, mounts). QA reviews the diff; QE exercises the live app. Spawned by TL;
  isolated context, test-tenant creds only, never prod/cross-tenant.
 - Two-gate discipline: a **Story** (the what/why, PC-owned — and it **carries given/when/then
  acceptance criteria**, authored before the build) is ratified before a **Brief** (the how, TL-owned)
  is drafted; a Brief passes an operator check before CC runs.
-- **Agent-team constitution.** A teammate is an independent Claude Code instance the lead spawns by
- request — the `Agent` tool is the subagent (one-shot side-read) primitive and **never makes a
- teammate**. Seat rubrics live in `.claude/agents/` (single source; a file outside it doesn't
- register as a spawnable type); each seat pins its `model`/`effort` in frontmatter (teammates don't
- inherit the lead's model); reviewer seats are read-only. **A seat-def's `tools`/`model` carry to a
+- **The primitive call (TL, at Story receipt).** The Brief header declares `PRIMITIVE:` beside SIZE —
+ **SUBAGENTS** (default) or **TEAMS** + one-line justification; operator veto at the Brief check.
+ SUBAGENTS: TL orchestrates; **CC runs as an implementation subagent for M/L** (own context; TL
+ verifies work it did not write; XS/S may collapse to TL-implements); QA/SA (QE where a UI/API
+ surface is touched) run as blind subagent reviewers per the protocol. A subagent cannot spawn
+ subagents — side-reads belong to the lead. TEAMS: genuine inter-seat interaction only; the
+ Constitution Preamble + operator concurrency probe gate the spawn (Rule 9 v2).
+- **Agent-team constitution (TEAMS path).** A teammate is an independent Claude Code instance the lead spawns by
+ request as a **named, backgrounded teammate** (registers in `members[]`, SendMessage-addressable) —
+ the `Agent` tool carries both primitives: **named + backgrounded = teammate; anonymous one-shot =
+ subagent**; the mode, not the tool, is the discriminator. Seat rubrics live in `.claude/agents/` (single source; a file outside it doesn't
+ register as a spawnable type); each seat pins its `model` in frontmatter (teammates don't inherit
+ the lead's model) — **effort is NOT seat-pinned: teammates inherit the lead's effort; a frontmatter
+ `effort:` line is informational**. Model escalation above the project's standard tier is a **TL
+ request** to the operator (one line, for itself or any seat). Reviewer seats are read-only (plus
+ the protocol's scoped verdict-file write). **A seat-def's `tools`/`model` carry to a
  spawned teammate, but its `skills`/`mcpServers` frontmatter do not** — teammates load those from
  project/user settings, so provision a needed skill or server there, not in the role-def. Prove the
  constitution before the team works (Rule 9).
 
 ## ORCHESTRATION (match the primitive; don't default heavier)
-Subagents = in-session parallel side-reads (cheapest). Agent Teams = the build substrate for
-cross-check-heavy work. Cloud Routines = scheduled recurring jobs. Dynamic Workflows = one-shot
+**Subagents = the default build pipeline** (implementation subagent + blind reviewers) and in-session
+parallel side-reads (cheapest). **Agent Teams = the declared exception** — genuine inter-seat
+interaction only, justified in the Brief header, preamble + operator probe gating the spawn. Cloud
+Routines = scheduled recurring jobs. Dynamic Workflows = one-shot
 repo-scale fan-out-and-converge only (*if a regular session would finish in five minutes, you don't
 need one*). Each evolving/preview substrate carries a re-verify-before-adopt gate.
 Agent Teams are **not a cheaper class** (same models; cost = live-context × duration; idle seats
@@ -179,5 +208,5 @@ separation, **not (by itself) OS-level isolation**; prove what your harness/OS a
 Display mode (in-process cycling vs split panes) is cosmetic — it does not change the separation.
 
 <!-- RELEASE HISTORY: this public edition distills the ratified generic core PI (public edition).
- The internal per-version derivation comments — which reference private project sessions — are not
- part of the public release. See the repository CHANGELOG for public release history. -->
+ The internal per-version derivation comments are not part of the public release. See the repository
+ CHANGELOG for public release history. -->
